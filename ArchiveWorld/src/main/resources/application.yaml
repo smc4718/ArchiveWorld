@@ -14,8 +14,8 @@ spring:
       initialization-fail-timeout: 0  # DB 연결 실패 시에도 애플리케이션 부팅 계속 시도
 
 mybatis:  # 기존 mybatis-config.xml 파일 대체
-  mapper-locations: classpath*:mapper/*.xml  # MyBatis 매퍼 XML 경로
-  type-aliases-package: com.ArchiveWorld.dto
+  mapper-locations: classpath*:mapper/**/*.xml  # mapper 폴더 하위 모든 경로의 XML 파일을 스캔
+  type-aliases-package: com.ArchiveWorld
   configuration:
     map-underscore-to-camel-case: true
 

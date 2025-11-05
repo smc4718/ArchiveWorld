@@ -1,4 +1,6 @@
 HELP.md
+
+### Gradle ###
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -32,6 +34,17 @@ out/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+### Logs ###
+logs/
+*.log
+
+### OS files ###
+.DS_Store
+Thumbs.db
+
+### Others ###
+out/
 
 ### VS Code ###
 .vscode/

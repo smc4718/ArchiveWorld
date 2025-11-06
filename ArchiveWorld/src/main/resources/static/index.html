@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <title>Note 등록 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            --bg: #0f172a; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#22c55e; --danger:#ef4444;
+            --border:#1f2937; --btn:#2563eb; --btn-hover:#1d4ed8;
+        }
+        *{box-sizing:border-box}
+        body {
+            margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Pretendard, Apple SD Gothic Neo, sans-serif;
+            background:linear-gradient(135deg,#0b1220,#0f172a 35%,#0b1324); color:var(--text);
+            min-height:100vh; display:grid; place-items:center; padding:24px;
+        }
+        .card {
+            width:min(720px, 96vw); background:var(--card); border:1px solid var(--border);
+            border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+        }
+        h1{margin:0 0 8px;font-size:22px}
+        p.desc{margin:0 0 20px;color:var(--muted);font-size:14px}
+        label{display:block;margin:14px 0 6px;font-weight:600}
+        input[type="text"], textarea{
+            width:100%; border:1px solid var(--border); background:#0b1220; color:var(--text);
+            border-radius:10px; padding:12px 14px; font-size:15px; outline:none;
+        }
+        textarea{height:160px; resize:vertical}
+        .row{display:flex; gap:10px; align-items:center; margin-top:16px}
+        button{
+            appearance:none; border:1px solid transparent; background:var(--btn); color:#fff; font-weight:700;
+            padding:12px 18px; border-radius:10px; cursor:pointer; transition:.15s; font-size:15px;
+        }
+        button:hover{background:var(--btn-hover)}
+        button:disabled{opacity:.6; cursor:not-allowed}
+        .ghost{background:transparent;border-color:var(--border);color:var(--text)}
+        .ghost:hover{border-color:#2a3345}
+        .status {margin-top:18px; font-size:14px; color:var(--muted)}
+        .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);margin-left:8px}
+        .ok{color:var(--accent); border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.08)}
+        .fail{color:var(--danger); border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.08)}
+        .out {margin-top:14px; padding:12px; background:#0b1220; border:1px solid var(--border); border-radius:10px; overflow:auto}
+        .grid {display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:14px}
+        @media (max-width:720px){.grid{grid-template-columns:1fr}}
+        code, pre {font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px}
+        .small{font-size:12px;color:var(--muted)}
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>게시글 등록</h1>
+    <p class="desc">API: <code>POST /api/notes</code> (JSON) → 응답은 <code>ApiResponse&lt;NoteDto&gt;</code> 형식</p>
+
+    <form id="note-form" autocomplete="off">
+        <label for="title">제목</label>
+        <input id="title" name="title" type="text" placeholder="제목을 입력하세요" required />
+
+        <label for="contents">내용</label>
+        <textarea id="contents" name="contents" placeholder="내용을 입력하세요" required></textarea>
+
+        <div class="row">
+            <button id="submitBtn" type="submit">등록</button>
+            <button class="ghost" id="resetBtn" type="button">초기화</button>
+            <span class="status" id="status">대기 중…</span>
+        </div>
+    </form>
+
+    <div class="grid">
+        <div>
+            <div class="small">요청 페이로드</div>
+            <pre class="out" id="reqBox">{}</pre>
+        </div>
+        <div>
+            <div class="small">응답 결과</div>
+            <pre class="out" id="resBox">{}</pre>
+        </div>
+    </div>
+
+    <div id="summary" class="status" style="margin-top:10px"></div>
+</div>
+
+<script>
+    const form = document.getElementById('note-form');
+    const titleEl = document.getElementById('title');
+    const contentsEl = document.getElementById('contents');
+    const reqBox = document.getElementById('reqBox');
+    const resBox = document.getElementById('resBox');
+    const statusEl = document.getElementById('status');
+    const summaryEl = document.getElementById('summary');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function setBusy(b){
+        submitBtn.disabled = b;
+        statusEl.textContent = b ? '전송 중…' : '대기 중…';
+    }
+
+    function pretty(obj){ try { return JSON.stringify(obj, null, 2) } catch(e){ return String(obj) } }
+
+    resetBtn.addEventListener('click', () => {
+        form.reset();
+        reqBox.textContent = '{}';
+        resBox.textContent = '{}';
+        summaryEl.innerHTML = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            title: titleEl.value.trim(),
+            contents: contentsEl.value.trim()
+        };
+        reqBox.textContent = pretty(payload);
+
+        if(!payload.title || !payload.contents){
+            summaryEl.innerHTML = `<span class="badge fail">유효성 오류</span> 제목/내용을 입력하세요.`;
+            return;
+        }
+
+        setBusy(true);
+        summaryEl.innerHTML = '';
+
+        try {
+            const res = await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const statusText = `${res.status} ${res.statusText}`;
+            let body;
+            try { body = await res.json(); } catch { body = { raw: await res.text() } }
+
+            resBox.textContent = pretty(body);
+
+            if(res.ok && body && body.success){
+                const note = body.data || {};
+                const info = [
+                    `상태: ${statusText}`,
+                    note.noteNo != null ? `번호: ${note.noteNo}` : null,
+                    note.title ? `제목: ${note.title}` : null,
+                ].filter(Boolean).join(' · ');
+
+                summaryEl.innerHTML = `<span class="badge ok">성공</span> ${body.message || '등록 완료'}<br/><span class="small">${info}</span>`;
+                // 성공 시 폼 비우기(원하면 주석 해제)
+                // form.reset();
+            } else {
+                const msg = (body && body.message) ? body.message : '요청 실패';
+                summaryEl.innerHTML = `<span class="badge fail">실패</span> ${msg}<br/><span class="small">상태: ${statusText}</span>`;
+            }
+        } catch (err) {
+            summaryEl.innerHTML = `<span class="badge fail">에러</span> 네트워크 오류 또는 서버 다운<br/><span class="small">${err?.message || err}</span>`;
+        } finally {
+            setBusy(false);
+        }
+    });
+</script>
+</body>
+</html>

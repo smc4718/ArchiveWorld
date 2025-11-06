@@ -3,8 +3,8 @@ spring:
     name: ArchiveWorld
 
   datasource:
-    url: jdbc:mariadb://loacalhost:3306/ArchiveWorld?useUnicode=true&characterEncoding=utf8
-    username: ArchiveWorld
+    url: jdbc:mariadb://localhost:3306/ArchiveWorld?useUnicode=true&characterEncoding=utf8
+    username: archiveWorld
     password: 1735
     driver-class-name: org.mariadb.jdbc.Driver
 
